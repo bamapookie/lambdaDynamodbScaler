@@ -6,6 +6,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -63,21 +64,60 @@ public class Scaler
                 if (ScalingProperties.containsKey(readProp)
                     && ScalingProperties.containsKey(writeProp))
                 {
-                    String readCapacity = (String) ScalingProperties.getProperty(readProp);
-                    String writeCapacity = (String) ScalingProperties.getProperty(writeProp);
+                    String readCapacity = ScalingProperties.getProperty(readProp);
+                    String writeCapacity = ScalingProperties.getProperty(writeProp);
                     //Execute the scaling change
                     message += scaleTable(tableName, Long.parseLong(readCapacity), Long.parseLong(writeCapacity));
                 }
                 else
                 {
-                    log("No values found for table " + tableName );
-                    message += "\nNo values found for table " + tableName + "\n";
+                    log(tableName + "\n No values found for table.\n");
+                    message += tableName + "\n No values found for table.\n";
                 }
             }
         }
         else
         {
-            log("tables parameter not found in properties file");
+            log("tableNames parameter not found in properties file");
+        }
+        //Get the index names
+        if (ScalingProperties.containsKey("indexnames"))
+        {
+            String value = (String) ScalingProperties.get("indexnames");
+            String[] tableAndIndexNames = value.split(",");
+            for (String tableAndIndexName : tableAndIndexNames)
+            {
+                String[] split = tableAndIndexName.split("%");
+                if (split.length == 2)
+                {
+                    String tableName = split[0];
+                    String indexName = split[1];
+                    //Check if there is a change requested for this hour
+                    String readProp = hour + "." + indexName + ".read";
+                    String writeProp = hour + "." + indexName + ".write";
+                    if (ScalingProperties.containsKey(readProp)
+                        && ScalingProperties.containsKey(writeProp))
+                    {
+                        String readCapacity = ScalingProperties.getProperty(readProp);
+                        String writeCapacity = ScalingProperties.getProperty(writeProp);
+                        //Execute the scaling change
+                        message += scaleIndex(tableName, indexName, Long.parseLong(readCapacity), Long.parseLong(writeCapacity));
+                    }
+                    else
+                    {
+                        log("No values found for index " + tableAndIndexName);
+                        message += "\nNo values found for index " + tableAndIndexName + "\n";
+                    }
+                }
+                else
+                {
+                    message += tableAndIndexName + "\n Index name in wrong format (tableName:indexName).\n";
+                }
+            }
+        }
+        else
+        {
+            log("indexNames parameter not found in properties file");
         }
         log(message);
         Response response = new Response(true, message);
@@ -119,6 +159,32 @@ public class Scaler
             return tableName + "\n Requested throughput equals current throughput\n";
         }
     }
+
+    private String scaleIndex(String tableName, String indexName, Long readCapacity, Long writeCapacity)
+    {
+        Table table = dynamoDB.getTable(tableName);
+        ProvisionedThroughput tp = new ProvisionedThroughput();
+        tp.setReadCapacityUnits(readCapacity);
+        tp.setWriteCapacityUnits(writeCapacity);
+        TableDescription d = table.describe();
+        for (GlobalSecondaryIndexDescription indexDescription : d.getGlobalSecondaryIndexes()) {
+            if (Objects.equals(indexDescription.getIndexName(), indexName)) {
+                if (!Objects.equals(indexDescription.getProvisionedThroughput().getReadCapacityUnits(), readCapacity)
+                        || !Objects.equals(indexDescription.getProvisionedThroughput().getWriteCapacityUnits(), writeCapacity)) {
+                    d = table.getIndex(indexName).updateGSI(tp);
+                    return tableName + ":" + indexName + "\nRequested read/write : " + readCapacity + "/" + writeCapacity
+                            + "\nCurrent read/write :" + d.getProvisionedThroughput().getReadCapacityUnits() + "/" + d.getProvisionedThroughput().getWriteCapacityUnits()
+                            + "\nStatus : " + d.getTableStatus() + "\n";
+                }
+                else
+                {
+                    return tableName + ":" + indexName + "\n Requested throughput equals current throughput.\n";
+                }
+            }
+        }
+        return tableName + ":" + indexName + "\n No index found.\n";
+    }
+
     private void setup()
     {
         //Setup credentials
