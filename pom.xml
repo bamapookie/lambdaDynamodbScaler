@@ -7,30 +7,30 @@
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
     <dependencies>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-dynamodb</artifactId>
-            <version>1.10.16</version>
+            <version>1.11.147</version>
         </dependency>
 		
 		<dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-cloudwatch</artifactId>
-            <version>1.10.16</version>
+            <version>1.11.147</version>
         </dependency>
 		 <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-lambda-java-core</artifactId>
-            <version>1.0.0</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.10</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -42,7 +42,7 @@
                     <version>2.3</version>
                     <configuration>
                         <createDependencyReducedPom>false</createDependencyReducedPom>
-                         <finalName>uber-${artifactId}-${version}</finalName>
+                         <finalName>uber-${project.artifactId}-${project.version}</finalName>
                       </configuration>
                     <executions>
                             <execution>
