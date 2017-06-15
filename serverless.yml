@@ -1,0 +1,60 @@
+service: lambdaDynamodbScaler
+
+frameworkVersion: ">=1.2.0 <2.0.0"
+
+custom:
+  myStage: ${opt:stage, self:provider.stage}
+  jarPath: target/uber-LambdaDynamoDBScaler-1.0-SNAPSHOT.jar
+  bucket:  my-bucket-lambda-dynamodb-scaler-{self:custom.myStage}
+  dev:
+    region: us-east-1
+  prod:
+    region: us-east-1
+
+
+provider:
+  name: aws
+  stage: dev
+  runtime: java8
+  region: ${self:custom.${self:custom.myStage}.region}
+  environment:
+    STAGE: ${self:custom.myStage}
+    BUCKET: ${self:custom.bucket}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - dynamodb:ListTables
+        - dynamodb:DescribeTable
+        - dynamodb:UpdateTable
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+      Resource: arn:aws:s3:::${self:custom.bucket}/*
+
+package:
+  artifact: ${self:custom.jarPath}
+
+functions:
+  scaler:
+    handler: be.quodlibet.lambdadynamodbscaler.Scaler::scale
+    memorySize: 128
+    timeout: 30
+    events:
+      - schedule: rate(1 hour)
+
+resources:
+  Resources:
+    ## Specifying the S3 Bucket
+    ConfigS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucket}
+        VersioningConfiguration:
+          Status: Enabled

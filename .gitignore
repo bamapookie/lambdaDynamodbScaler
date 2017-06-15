@@ -2,5 +2,9 @@
 *.jar
 .netbeans*
 target/*/
-/.idea
+*~
+.DS_Store
+.idea
+*.swp
+*.swo
 *.iml
