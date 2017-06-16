@@ -98,8 +98,8 @@ public class Scaler
                     String tableName = split[0];
                     String indexName = split[1];
                     //Check if there is a change requested for this hour
-                    String readProp = hour + "." + indexName + ".read";
-                    String writeProp = hour + "." + indexName + ".write";
+                    String readProp = hour + "." + tableAndIndexName + ".read";
+                    String writeProp = hour + "." + tableAndIndexName + ".write";
                     if (ScalingProperties.containsKey(readProp) && ScalingProperties.containsKey(writeProp))
                     {
                         String readCapacity = ScalingProperties.getProperty(readProp);
