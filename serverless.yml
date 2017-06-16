@@ -5,7 +5,7 @@ frameworkVersion: ">=1.2.0 <2.0.0"
 custom:
   myStage: ${opt:stage, self:provider.stage}
   jarPath: target/uber-LambdaDynamoDBScaler-1.0-SNAPSHOT.jar
-  bucket:  my-bucket-lambda-dynamodb-scaler-{self:custom.myStage}
+  bucket:  my-bucket-lambda-dynamodb-scaler-${self:custom.myStage}
   dev:
     region: us-east-1
   prod:
